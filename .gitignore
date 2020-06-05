@@ -1,0 +1,6 @@
+.python-version
+.ipynb_checkpoints/
+.DS_Store
+*.swp
+*.swo
+

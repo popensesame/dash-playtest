@@ -1,0 +1,7 @@
+dash==1.12.0
+numpy
+jupyterlab
+notebook
+jupyter-dash
+jupyterlab-dash
+pandas
