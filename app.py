@@ -65,17 +65,17 @@ dropdown_styles = {}
 # Default trajectory selector ('dropdown' or 'slider')
 default_trajectory_selector = 'slider'
 
+# Read the data files into pandas dataframes
+results_dir = './results_csv_06042020_150109/'
+dfs = read_ensemble_data_from_results_folder(results_dir)
+
 # Setup dropdown options
 trajectory_options = options_factory(range(len(dfs)), label_accessor=lambda x: str(x+1))
 species_options = options_factory([ c for c in dfs[0].columns if c != 'time' ])
 group_options = range(1, 5)
 
-# Read the data files into pandas dataframes
-results_dir = './results_csv_06042020_150109/'
-dfs = read_ensemble_data_from_results_folder(results_dir)
-
 # Make the initial store
-store = defaultLocalStore()
+store = defaultLocalStore(dfs)
 
 
 ## App
@@ -134,35 +134,67 @@ group_assigner_layout = html.Div([
     "Set Group",
     dcc.Dropdown(id='group-dropdown-trajectory', clearable=True, style=dropdown_styles, options=group_options, value=0)
     ]),
-    dcc.Graph(id='graph')
-    # Color scale dropdown menu
+    dcc.Graph(id='ensemble-trajectory-graph')
 ])
 
+
+## Layout
+
+app.layout = html.Div([
+    dcc.Store(id='memory', data=store),
+    group_assigner_layout,
+    #group_inspector_layout
+])
+
+
+'''
+# Interface for inspecting groups
 group_inspector_layout = html.Div([
     html.H4(children="Inspect Groups"),
-    
-    html.Label("Select Group"),
-    
+    html.Label([
+    "Select Group",
+    dcc.Dropdown(id='group-inspector-select-group-dropdown', clearable=True, style=dropdown_styles, options=group_options, value=0)
+    ]),
     html.Label([
     "Show Species",
     dcc.Dropdown(style=dropdown_styles,
         id='species-dropdown-group', clearable=False,
         value=1, options=group_options)
     ]),
-    html.Label([
-    "Select Group",
-    dcc.Dropdown(id='group-inspector-select-group-dropdown', clearable=True, style=dropdown_styles, options=group_options, value=0)
-    ]),
-    dcc.Graph(id='graph')
+		
+    dcc.Graph(className='group-inspect-graph')
     # Color scale dropdown menu
 ])
+'''
 
-app.layout = html.Div([
-    dcc.Store(id='memory', data=store),
-    group_assigner_layout,
-    group_inspector_layout
-])
+## Callbacks
+#
 
+## Group inspector interface callbacks
+
+
+
+
+## Group assignment interface callbacks
+
+# Update the trajectory figure
+@app.callback(
+    Output('ensemble-trajectory-graph', 'figure'),
+    [Input('species-dropdown-trajectory', 'value'),
+     Input('trajectory-selector', 'value')]
+)
+def update_figure(species, trajectory):
+    
+    if species == 'ALL':
+        species = y_column_names
+
+    return px.line(
+        dfs[trajectory], x="time", y=species,
+        render_mode="webgl", title="Trajectory {}".format(trajectory+1)
+    )
+
+
+# Switch trajectory selector interface (slider or dropdown)
 @app.callback(
     Output('trajectory-selector-container', 'children'),
     [Input('select-trajectory-dropdown-btn', 'n_clicks'),
@@ -178,24 +210,7 @@ def update_trajectory_selector_dropdown(dropdown_n_clicks, slider_n_clicks, curr
     return current
 
 
-# Define callback to update graph
-@app.callback(
-    Output('graph', 'figure'),
-    [Input('species-dropdown-trajectory', 'value'),
-     Input('trajectory-selector', 'value')]
-)
-def update_figure(species, trajectory):
-    
-    if species == 'ALL':
-        species = y_column_names
-
-    return px.line(
-        dfs[trajectory], x="time", y=species,
-        render_mode="webgl", title="Trajectory {}".format(trajectory+1)
-    )
-
-
-# Update the group dropdown when selected trajectory changes
+# Update the 'set group' dropdown when selected trajectory changes
 @app.callback(
     Output('group-dropdown-trajectory', 'value'),
     [Input('memory', 'modified_timestamp'),
@@ -218,5 +233,7 @@ def set_trajectory_group(group, trajectory, memory):
     return memory
 
 
-# Run app and display result inline in the notebook
-app.run_server(debug=True)
+
+# Run the server
+if __name__ == '__main__':
+	app.run_server(debug=True)
