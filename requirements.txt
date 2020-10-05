@@ -5,3 +5,7 @@ notebook
 jupyter-dash
 jupyterlab-dash
 pandas
+matplotlib
+ipympl
+gillespy2
+git+https://github.com/stochss/sciope.git@master
